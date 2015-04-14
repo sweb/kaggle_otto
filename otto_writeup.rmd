@@ -1,0 +1,89 @@
+---
+title: "Otto Product Classification"
+output: html_document
+---
+
+I recently started working on the [Otto product classification challenge](https://www.kaggle.com/c/otto-group-product-classification-challenge) on kaggle. I want to document my progress, as well as interesting insights and ideas to follow up on.
+
+```{r include=FALSE}
+require(ggplot2)
+require(Amelia)
+setwd("C:/dev/repositories/R/kaggle_otto")
+raw.data <- read.csv("data/train.csv", header = TRUE, sep = ",", na.strings = "")
+```
+
+### Challenge goal and data set
+Participants of the challenge receive a csv-file with close to 62,000 rows and 95 columns. Each row represents a product of the Otto group with an unique id, stored in the first column. The last column of the data set is used to assign a product category to the single product. The other 93 columns store obfuscated attributes of the products. The goal of the challenge is to classify a new data set, which does not provide the last column, into one of nine product categories, based on the provided data.
+
+### Getting started
+The first aspect to notice is that there is no background information concerning products or features available. Thus, for the moment, domain knowledge will not help to improve classification performance.
+
+Another very important aspect is concerned with missing values. The data set is complete, i.e. there are no values missing. This does not directly mean that there are no data quality issues but for the moment there is no necessity to handle missing values.
+
+In order to get a first impression of the product class distribution, the number of products per class is plotted:
+
+```{r, echo=FALSE}
+  ggplot(data = raw.data) +
+  theme_bw() +
+  geom_bar(aes(x = target)) +
+  xlab("Product classes") +
+  ylab("Number of products")
+```
+
+### Data transformations
+The data set comes very well prepared. There is no immediate feature extraction that is required. No grouping or joining of data sources is needed. The only transformation I perform is more or less optional and extracts the class information from the last column into binary features, one for every class. Thus, I lose the one column that tells me about the right class and add nine columns with Yes/No values, depending on the class they are assigned to. Choosing characters is an R-specific bug/feature since some algorithms are going to need character factors to deal with classification attributes.
+
+However, another form of transformation is necessary before the first algorithm can be applied: A split of the data set into train, validation and test set. I choose a 0.6/0.2/0.2 distribution, sampled from the imported and transformed data.
+
+### Enter: Logistic regression
+First order of business, even before looking at the data in detail, is going to be a logistic regression classifier, using all available features and the whole training set. For each class, I train a different logistic regression function and afterwards I test it by using the resulting function on the validation data set. The results, concerning accuracy, are plotted below:
+
+```{r, echo=FALSE}
+  accuracy.data <- read.csv("observations/accu_logreg.csv", header = TRUE, sep = ",", na.strings = "")
+  ggplot(data = accuracy.data, aes(y=accus)) +
+    theme_bw() +
+    geom_bar(stat="identity", aes(x = Class, y=accus)) +
+    coord_cartesian(ylim = c(0.8, 1)) +
+    xlab("Product classes") +
+    ylab("Accuracy")
+```
+
+On a first glimpse the performance is surprisingly good. All classifiers are well above 80 percent, most of them above 95 percent. Only the classifiers for class 2 and class 3 fall a little bit short. However, it is not possible to translate high accuracy of single classifiers into overall performance since data rows without a single identified class can occur. Furthermore, the accuracy of the classifiers should be compared to a baseline, e.g. a classifier that always associates "No" with a product class:
+
+```{r, echo=FALSE}
+  diff.data <- read.csv("observations/accu_comparison.csv", header = TRUE, sep = ",", na.strings = "")
+  ggplot(data = diff.data, aes(y=accus)) +
+  theme_bw() +
+  geom_bar(stat="identity", aes(x = Class, y=accus, fill=type), position="stack") +
+  scale_fill_brewer(type = "qual", palette="Blues") +
+  xlab("Product classes") +
+  ylab("Accuracy")
+```
+
+This changes the perspective concerning classifier performance quite a bit. Classes 1, 3, 4 and 7 barely perform better than the mentioned baseline. Class 6 seems to be the easiest to classify in comparison to the other classes. However, this indicates that accuracy may not be the best indication for classifier performance. For future comparisons, especially of different classifiers for the same class, precision/recall should be used.
+
+In order to decide early on, which next steps could be useful, a learning curve is plotted in order to estimate whether the current errors are due to bias or variance. Another approach to detect bias or variance would be to increase model complexity. However, a quadratic model with 93 base features would already use more than 5000 features, which may not be the best solution to get a quick feedback concerning the learning curve.
+
+```{r, echo=FALSE}
+  c <- read.csv("observations/learning_curve.csv", header = TRUE, sep = ",", na.strings = "")
+  ggplot(data = c) +
+  theme_bw() +
+  geom_point(aes(x=percentage, y=train, colour="Training")) +
+  geom_point(aes(x=percentage, y=valid, colour="Validation")) +
+  geom_smooth(aes(x=percentage, y=train), colour="red", method = "loess") +
+  geom_smooth(aes(x=percentage, y=valid), method = "loess") +
+  scale_colour_manual("",
+                      breaks = c("Training", "Validation"),
+                      values = c("red", "blue")) +
+  ggtitle("Learning curve Class 2 using logistic regression") +
+  xlab("Percentage of training set") +
+  ylab("Accuracy")
+```
+
+The learning curves of training and validation data seem to stabilize when more than 20 percent of training data is used to train the classifier of product class 2. The gap between the two curves is fairly small (less than 0.1 percentage points of accuracy). This seems to be indicative of a high-bias problem. The next step should be to increase model complexity by adding features.
+
+### Next steps
+
+Next, bias reduction is going to be the main goal. In order to find reasonable additional features, a thorough exploration of the provided data should be the starting point. In addition, an exploration of current classification results should help to pinpoint major obstacles for classifiers.
+
+Another approach could be to change the classification method to overcome bias with more suitable algorithms like neural networks. However, I think that spending time to improve my understanding of the data should also help to select and adjust other classification methods.
