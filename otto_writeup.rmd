@@ -3,7 +3,7 @@ title: "Otto Product Classification"
 output: html_document
 ---
 
-I recently started working on the [Otto product classification challenge](https://www.kaggle.com/c/otto-group-product-classification-challenge) on kaggle. I want to document my progress, as well as interesting insights and ideas to follow up on.
+I recently started working on the [Otto product classification challenge](https://www.kaggle.com/c/otto-group-product-classification-challenge) on kaggle. I want to document my progress, as well as interesting insights and ideas to follow up on. My sources can be found on [github](https://github.com/sweb/kaggle_otto).
 
 ```{r include=FALSE}
 require(ggplot2)
