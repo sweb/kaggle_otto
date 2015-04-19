@@ -43,7 +43,6 @@ First order of business, even before looking at the data in detail, is going to 
   ggplot(data = accuracy.data, aes(y=accus)) +
     theme_bw() +
     geom_bar(stat="identity", aes(x = Class, y=accus)) +
-    coord_cartesian(ylim = c(0.8, 1)) +
     xlab("Product classes") +
     ylab("Accuracy")
 ```

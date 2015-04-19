@@ -1,0 +1,19 @@
+---
+title: "Feature exploration of Otto kaggle challenge"
+output: html_document
+---
+
+```{r include=FALSE}
+require(ggplot2)
+setwd("C:/dev/repositories/R/kaggle_otto")
+raw.data <- read.csv("data/train.csv", header = TRUE, sep = ",", na.strings = "")
+```
+
+```{r, echo=FALSE}
+  gather_diff <- read.csv("observations/class2_diff_features.csv", header = TRUE, sep = ",", na.strings = "")
+  ggplot(data = gather_diff, aes(x=reorder(variable, value))) +
+  geom_bar(stat="identity", position="dodge", aes(y=value,fill=class)) +
+  theme_minimal() +
+  scale_fill_brewer(type="div", palette = "RdBu") +
+  coord_flip()
+```

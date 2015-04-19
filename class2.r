@@ -81,11 +81,14 @@ comp <- data.frame(result = logreg.tmp.pred, prob = logreg.tmp.prob, validation.
 correct_class <- comp %>% filter(result == is_class2) %>% 
   filter(result == "Yes") %>% select(-(is_class1:is_class9))
 
+correct_class.no <- comp %>% filter(result == is_class2) %>% 
+  filter(result == "No") %>% select(-(is_class1:is_class9))
+
 wrong_class.yes <- comp %>% filter(result != is_class2) %>% 
-  filter(result == "Yes") %>% select(-(is_class1:is_class9))
+  filter(result == "Yes") %>% select(-(is_class2))
 
 wrong_class.no <- comp %>% filter(result != is_class2) %>% 
-  filter(result == "No") %>% select(-(is_class2))
+  filter(result == "No") %>% select(-(is_class1:is_class9))
 
 
 calc.res <-logreg.tmp.train$finalModel$coefficients * cbind(1, validation.data[2,] %>% 
@@ -102,10 +105,50 @@ showCoefficients <- function(coeff, data, rowId) {
   return (res)
 }
 
-tmp <- showCoefficients(logreg.tmp.train$finalModel$coefficients, correct_class,9)
+multiplyCoefficients <- function(coeff, data) {
+  res <-t(t(cbind(1, data %>% select(feat_1:feat_93))) * coeff)
+  return (res)
+}
+
+tmp <- showCoefficients(logreg.tmp.train$finalModel$coefficients, wrong_class.no, 1)
 
 ggplot(data = melt(tmp) %>% filter(value != 0), aes(x=variable, y=value)) +
   geom_bar(stat="identity", position="dodge") +
   coord_flip()
 
 data.frame(row.names(logreg.tmp.train$finalModel$coefficients), melt(logreg.tmp.train$finalModel$coefficients)) %>% arrange(desc(value))
+
+factored.correct_class <- correct_class %>% sapply(as.factor) %>% data.frame()
+factored.wrong_class.no <- wrong_class.no %>% sapply(as.factor) %>% data.frame()
+
+avg_feat_correct_class <- multiplyCoefficients(logreg.tmp.train$finalModel$coefficients, correct_class) %>% 
+  data.frame %>% summarise_each(funs(mean)) %>% melt
+
+avg_feat_correct_class.no <- multiplyCoefficients(logreg.tmp.train$finalModel$coefficients, correct_class.no) %>% 
+  data.frame %>% summarise_each(funs(mean)) %>% melt
+
+avg_feat_wrong_class.no <- multiplyCoefficients(logreg.tmp.train$finalModel$coefficients, wrong_class.no) %>% 
+  data.frame %>% summarise_each(funs(mean)) %>% melt
+
+avg_feat_validation <- multiplyCoefficients(logreg.tmp.train$finalModel$coefficients, validation.data) %>% 
+  data.frame %>% summarise_each(funs(mean)) %>% melt
+
+joined_data <- inner_join(avg_feat_correct_class, avg_feat_wrong_class.no, by="variable") %>%
+  inner_join(avg_feat_validation, by="variable") %>%
+  rename(Correct = value.x, Wrong = value.y, Validation = value) %>%
+  inner_join(avg_feat_correct_class.no, by="variable") %>%
+  rename(Correct_No = value)
+
+difference <- joined_data %>% 
+  mutate(diff = abs(Correct - Wrong)) %>% top_n(15, diff) %>% arrange(desc(diff))
+
+
+gather_diff <- difference %>% select(-diff) %>% gather("class", "value", 2:5)
+
+write.csv(gather_diff, file = "observations/class2_diff_features.csv", quote = TRUE, row.names = TRUE)
+
+ggplot(data = gather_diff, aes(x=reorder(variable, value))) +
+  geom_bar(stat="identity", position="dodge", aes(y=value,fill=class)) +
+  theme_minimal() +
+  scale_fill_brewer(type="div", palette = "RdBu") +
+  coord_flip()
