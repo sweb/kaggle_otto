@@ -1,6 +1,5 @@
 require(dplyr)
 require(ggplot2)
-require(Amelia)
 require(caret)
 
 setwd("C:/dev/repositories/R/kaggle_otto")
