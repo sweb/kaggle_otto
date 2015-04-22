@@ -63,7 +63,7 @@ qplot(x=Var1, y=Var2, data=melt(cor(binary.data %>% filter(target == "Class_6") 
 
 logreg.tmp.train <- train(is_class2 ~ .,
                           data = train.data %>% select(feat_1:feat_93, is_class2),
-                          method = "plr",
+                          method = "glm",
                           metric = "ROC",
                           trControl = control.config)
 
