@@ -4,6 +4,8 @@ require(caret)
 
 setwd("C:/dev/repositories/R/kaggle_otto")
 
+source("init_ws.r")
+
 source("otto_functions.r")
 
 raw.data <- read.csv("data/train.csv", header = TRUE, sep = ",", na.strings = "")

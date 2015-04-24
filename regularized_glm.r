@@ -66,7 +66,7 @@ addFeatureCombination <- function(featureId, data) {
 
 c <- data.frame()
 
-for (i in seq(16,18)) {
+for (i in seq(19,70)) {
   engineered.data <- normalize(addFeatureCombination(i, munged.data))
   
   split.data <- createDataPartition(engineered.data$is_class2, p = 0.6, list = FALSE)
@@ -92,6 +92,9 @@ for (i in seq(16,18)) {
   
   logreg.tmp.pred <- predict(logreg.tmp.train, v.data)
   tmp.val.acc <- confusionMatrix(logreg.tmp.pred, v.data$is_class2)$overall[1]
+  print(paste("Train:", tmp.train.acc, "- Validation:", tmp.val.acc))
   c <- rbind(c, cbind(feat = i, train = tmp.train.acc, validation = tmp.val.acc))
 }
 print (paste("End at",Sys.time()))
+
+write.csv(c, file = "observations/feature_combinations.csv", quote = TRUE, row.names = TRUE)
