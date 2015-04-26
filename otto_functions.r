@@ -85,3 +85,20 @@ create_submission <- function(train.class1, train.class2, train.class3,
   write.csv(predictions, file = "result/submission.csv", 
             quote = FALSE, row.names = FALSE)
 }
+
+
+normalize <- function(df) {
+  mat <- data.matrix(df %>% select(-(is_class1:is_class9)))
+  norm_mat <- apply(mat, MARGIN = 2, FUN = function(X) (X - min(X))/diff(range(X)))
+  data <- data.frame(norm_mat, df %>% select(is_class2))
+  return (data)
+}
+
+
+addFeatureCombination <- function(featureId, data) {
+  new_feat <- data[,featureId] * select(data, feat_1:feat_93, -featureId)
+  colnames(new_feat) <- paste(colnames(select(data, featureId)),colnames(new_feat), sep="_")
+  
+  new_data <- data.frame(data, new_feat)
+  return (new_data)
+}
