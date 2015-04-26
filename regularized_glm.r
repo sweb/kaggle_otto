@@ -64,9 +64,14 @@ addFeatureCombination <- function(featureId, data) {
   return (new_data)
 }
 
+
+
 c <- data.frame()
 
-for (i in seq(19,70)) {
+c <- read.csv(file = "observations/feature_combinations.csv") %>% data.frame() %>% select(-X)
+
+for (i in seq(71,93)) {
+  print (paste("Starting", i))
   engineered.data <- normalize(addFeatureCombination(i, munged.data))
   
   split.data <- createDataPartition(engineered.data$is_class2, p = 0.6, list = FALSE)
@@ -97,4 +102,4 @@ for (i in seq(19,70)) {
 }
 print (paste("End at",Sys.time()))
 
-write.csv(c, file = "observations/feature_combinations.csv", quote = TRUE, row.names = TRUE)
+write.csv(c, file = "observations/feature_combinations.csv", quote = TRUE)
