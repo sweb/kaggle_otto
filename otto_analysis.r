@@ -61,7 +61,7 @@ test.data <- tmp.test.data[-split.test,]
 
 
 
-cv.ctrl.class1 <- trainControl(method = "repeatedcv", repeats = 3,
+cv.ctrl.class1 <- trainControl(method = "repeatedcv", repeats = 1,
                         summaryFunction = twoClassSummary,
                         classProbs = TRUE)
 

@@ -28,13 +28,13 @@ munge_data <- function(data) {
 
 
 
-predict_data <- function(data, 
+predict_data <- function(data, data2,
                          train.class1, train.class2, train.class3, 
                          train.class4, train.class5, train.class6, 
                          train.class7, train.class8, train.class9) {
   
   prob.class1 <- predict(train.class1, data, type="prob")
-  prob.class2 <- predict(train.class2, data, type="prob")
+  prob.class2 <- predict(train.class2, data2, type="prob")
   prob.class3 <- predict(train.class3, data, type="prob")
   prob.class4 <- predict(train.class4, data, type="prob")
   prob.class5 <- predict(train.class5, data, type="prob")
@@ -51,7 +51,7 @@ predict_data <- function(data,
                  prob.class6$Yes,
                  prob.class7$Yes,
                  prob.class8$Yes,
-                 prob.class9$Yes)
+                 prob.class9$Yes) %>% round(6) %>% format(nsmall = 6)
   
   colnames(probs) <- c("Class_1", "Class_2", "Class_3", "Class_4", "Class_5",
                        "Class_6", "Class_7", "Class_8", "Class_9")
@@ -69,7 +69,7 @@ predict_data <- function(data,
                                Class_8 = ifelse(Class_8 == max, 1, 0),
                                Class_9 = ifelse(Class_9 == max, 1, 0)) %>% select(-max)
   
-  res <- cbind( id = data %>% id, pred)
+  res <- cbind( id = data$id, probs)
   return (res)
 }
 
@@ -78,7 +78,10 @@ create_submission <- function(train.class1, train.class2, train.class3,
                               train.class4, train.class5, train.class6, 
                               train.class7, train.class8, train.class9) {
   data <- read.csv("data/test.csv", header = TRUE, sep = ",", na.strings = "")
-  predictions <- predict_data(data, train.class1, train.class2, train.class3, 
+  
+  data2 <- engineerDataClass2(data %>% select(-id))
+  
+  predictions <- predict_data(data, data2, train.class1, train.class2, train.class3, 
                               train.class4, train.class5, train.class6, 
                               train.class7, train.class8, train.class9)
   print(summary(predictions))
@@ -94,6 +97,13 @@ normalize <- function(df) {
   return (data)
 }
 
+normalize2 <- function(df) {
+  mat <- data.matrix(df)
+  norm_mat <- apply(mat, MARGIN = 2, FUN = function(X) (X - min(X))/diff(range(X)))
+  data <- data.frame(norm_mat)
+  return (data)
+}
+
 
 addFeatureCombination <- function(featureId, data) {
   new_feat <- data[,featureId] * select(data, feat_1:feat_93, -featureId)
@@ -101,4 +111,27 @@ addFeatureCombination <- function(featureId, data) {
   
   new_data <- data.frame(data, new_feat)
   return (new_data)
+}
+
+engineerDataClass2 <- function(data) {
+  feat_9_combinations <- normalize2(addFeatureCombination(9, data)) %>% 
+    select(1:93, 181, 116, 171, 180, 122, 177, 94, 154, 168, 126,103)
+  print(colnames(feat_9_combinations))
+  feat_14_combinations <- normalize2(addFeatureCombination(14, data)) %>%
+    select(169,126,172,122,181,121)
+  feat_25_combinations <- normalize2(addFeatureCombination(25, data)) %>%
+    select(103,107,108,111,122,124,126,128,132,137,152,158,161,166,169,170,176,181)
+  #feat_89_combinations <- normalize(addFeatureCombination(89, munged.data))
+  
+  feat_40_combinations <- normalize2(addFeatureCombination(40, data)) %>% 
+    select(101,104,107,108,110,117,123,126,127,140,152,159,161,166,169,170,181,184,185)
+  
+  feat_33_combinations <- normalize2(addFeatureCombination(33, data)) %>% 
+    select(104,107,108,117,143,154,156,158,164,166,168,171)
+  
+  feat_15_combinations <- normalize2(addFeatureCombination(15, data)) %>% 
+    select(102, 103, 104, 108, 116, 117, 122, 123, 125, 126, 130, 134, 135, 140, 151, 154, 155, 159, 163, 164, 165, 171, 172, 176, 178, 181, 184)
+  
+  engineered.data <- data.frame(feat_9_combinations, feat_14_combinations, feat_25_combinations, feat_40_combinations, feat_15_combinations)
+  return(engineered.data)
 }

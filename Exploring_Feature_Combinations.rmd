@@ -1,0 +1,34 @@
+---
+title: "Exploring Feature combinations"
+output: html_document
+---
+
+In order to decrease bias I opted for increasing the model complexity, while sticking to logistic regression as classification algorithm.
+
+```{r include=FALSE}
+setwd("C:/dev/repositories/R/kaggle_otto")
+source("init_ws.r")
+```
+
+```{r, echo=FALSE}
+  gather_diff <- read.csv("observations/class2_diff_features.csv", header = TRUE, sep = ",", na.strings = "")
+  ggplot(data = gather_diff, aes(x=reorder(variable, value))) +
+  geom_bar(stat="identity", position="dodge", aes(y=value,fill=class)) +
+  theme_classic() +
+  scale_fill_brewer(type="div", palette = "RdBu") +
+  coord_flip()
+```
+
+```{r, echo=FALSE}
+class2_accus <- read.csv("observations/feature_combinations.csv") %>% select(-X)
+ggplot(class2_accus, aes(x=train, y=validation)) +
+  theme_classic() +
+  geom_point()
+```
+
+```{r, echo=FALSE}
+ggplot(class2_accus %>% filter(validation > 0.83), aes(x=train, y=validation)) +
+  theme_minimal() +
+  geom_point() +
+  geom_text(aes(label = feat), hjust=1.5, size=4)
+```
