@@ -29,11 +29,11 @@ registerDoParallel(c1)
 i <- 48
 
 engineered.data <- normalize(addFeatureCombination(i, munged.data))
-
+set.seed(42)
 split.data <- createDataPartition(engineered.data$is_class2, p = 0.6, list = FALSE)
 t.data <- engineered.data[split.data, ]
 tmp.test.data <- engineered.data[-split.data, ]
-
+set.seed(42)
 split.test <- createDataPartition(tmp.test.data$is_class2, p = 0.5, list = FALSE)
 
 v.data <- tmp.test.data[split.test,]

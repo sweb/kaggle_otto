@@ -8,6 +8,12 @@ logreg.train.class1.1 <- train(is_class1 ~ .,
                                metric = "ROC",
                                trControl = control.config)
 
+# logreg.train.class2.1 <- train(is_class2 ~ .,
+#                                data = munged.data %>% select(-(is_class1), -(is_class3:is_class9)),
+#                                method = "glm",
+#                                metric = "ROC",
+#                                trControl = control.config)
+
 logreg.train.class3.1 <- train(is_class3 ~ .,
                                data = munged.data %>% select(-(is_class1:is_class2), -(is_class4:is_class9)),
                                method = "glm",

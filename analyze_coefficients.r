@@ -3,15 +3,16 @@ setwd("C:/dev/repositories/R/kaggle_otto")
 source("init_ws.r")
 
 require(reshape2)
+require (tidyr)
 
 engineered.data <- normalize(munged.data)
 
-#set.seed(42)
 
+set.seed(42)
 split.data <- createDataPartition(engineered.data$is_class2, p = 0.6, list = FALSE)
 t.data <- engineered.data[split.data, ]
 tmp.test.data <- engineered.data[-split.data, ]
-
+set.seed(42)
 split.test <- createDataPartition(tmp.test.data$is_class2, p = 0.5, list = FALSE)
 
 v.data <- tmp.test.data[split.test,]
@@ -51,15 +52,6 @@ wrong_class.no <- comp %>% filter(result != is_class2) %>%
   filter(result == "No")
 
 
-calc.res <-logreg.tmp.train$finalModel$coefficients * cbind(1, v.data[2,] %>% 
-                                                              select(feat_1:feat_93))
-
-ggplot(data = melt(calc.res) %>% filter(value != 0), aes(x=variable, y=value)) +
-  geom_bar(stat="identity", position="dodge") +
-  coord_flip()
-
-sigmoid(rowSums(calc.res))
-
 showCoefficients <- function(coeff, data, rowId) {
   res <-coeff * cbind(1, data[rowId,] %>% select(feat_1:feat_93))
   return (res)
@@ -70,16 +62,6 @@ multiplyCoefficients <- function(coeff, data) {
   return (res)
 }
 
-tmp <- showCoefficients(logreg.tmp.train$finalModel$coefficients, wrong_class.no, 1)
-
-ggplot(data = melt(tmp) %>% filter(value != 0), aes(x=variable, y=value)) +
-  geom_bar(stat="identity", position="dodge") +
-  coord_flip()
-
-data.frame(row.names(logreg.tmp.train$finalModel$coefficients), melt(logreg.tmp.train$finalModel$coefficients)) %>% arrange(desc(value))
-
-factored.correct_class <- correct_class %>% sapply(as.factor) %>% data.frame()
-factored.wrong_class.no <- wrong_class.no %>% sapply(as.factor) %>% data.frame()
 
 avg_feat_correct_class <- multiplyCoefficients(logreg.tmp.train$finalModel$coefficients, correct_class) %>% 
   data.frame %>% summarise_each(funs(mean)) %>% melt
@@ -91,6 +73,9 @@ avg_feat_wrong_class.no <- multiplyCoefficients(logreg.tmp.train$finalModel$coef
   data.frame %>% summarise_each(funs(mean)) %>% melt
 
 avg_feat_validation <- multiplyCoefficients(logreg.tmp.train$finalModel$coefficients, v.data) %>% 
+  data.frame %>% summarise_each(funs(mean)) %>% melt
+
+avg_feat_wrong_class.yes <- multiplyCoefficients(logreg.tmp.train$finalModel$coefficients, wrong_class.yes) %>% 
   data.frame %>% summarise_each(funs(mean)) %>% melt
 
 joined_data <- inner_join(avg_feat_correct_class, avg_feat_wrong_class.no, by="variable") %>%
@@ -105,10 +90,39 @@ difference <- joined_data %>%
 
 gather_diff <- difference %>% select(-diff) %>% gather("class", "value", 2:5)
 
-write.csv(gather_diff, file = "observations/class2_diff_features.csv", quote = TRUE, row.names = TRUE)
+#write.csv(gather_diff, file = "observations/class2_diff_features.csv", quote = TRUE, row.names = TRUE)
 
 ggplot(data = gather_diff, aes(x=reorder(variable, value))) +
   geom_bar(stat="identity", position="dodge", aes(y=value,fill=class)) +
   theme_minimal() +
   scale_fill_brewer(type="div", palette = "RdBu") +
   coord_flip()
+
+both_higher <- joined_data %>% 
+  filter(Correct < Validation & Wrong < Validation & Correct < 0) %>% 
+  mutate(diff = abs(Correct-Validation)) %>%
+  top_n(15, diff)
+
+
+opposite_joined_data <- inner_join(avg_feat_correct_class.no, avg_feat_wrong_class.yes, by="variable") %>%
+  inner_join(avg_feat_validation, by="variable") %>%
+  rename(Correct = value.x, Wrong = value.y, Validation = value) %>%
+  inner_join(avg_feat_correct_class, by="variable") %>%
+  rename(Correct_Yes = value)
+
+opposite_difference <- opposite_joined_data %>% 
+  mutate(diff = abs(Correct - Wrong)) %>% top_n(15, diff) %>% arrange(desc(diff))
+
+
+opposite_gather_diff <- opposite_difference %>% select(-diff) %>% gather("class", "value", 2:5)
+
+ggplot(data = opposite_gather_diff, aes(x=reorder(variable, value))) +
+  geom_bar(stat="identity", position="dodge", aes(y=value,fill=class)) +
+  theme_minimal() +
+  scale_fill_brewer(type="div", palette = "RdBu") +
+  coord_flip()
+
+opposite_joined_data %>% 
+  filter(Correct > Validation & Wrong > Validation & Correct > 0) %>% 
+  mutate(diff = abs(Correct-Validation)) %>%
+  top_n(15, diff)
