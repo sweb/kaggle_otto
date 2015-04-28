@@ -32,6 +32,24 @@ createPolyFeatures <- function(df, degree = 2) {
   return (resultDf)
 }
 
+createFeatureName <- function(df, i, j) {
+  diff <- i-j
+  baseName1 <- colnames(df)[1]
+  baseName2 <- colnames(df)[1]
+  
+  name1 <- ifelse(diff == 0, "", 
+                  ifelse(diff == 1, baseName1, 
+                         paste(baseName1, "e", diff, sep="")))
+  
+  name2 <- ifelse(j == 0, "", 
+                  ifelse(j == 1, baseName2, 
+                         paste(baseName2, "e", j, sep="")))
+  
+  finalName <- ifelse(diff == 0, name2, 
+                      ifelse(j == 0, name1, paste(name1,name2, sep="_")))
+  return(finalName)
+}
+
 logreg.tmp.train$finalModel$coefficients[c(0,14,9)+1]
 
 inter <- -0.2783963 / -1.4172225
@@ -110,6 +128,13 @@ ggplot(train.data, aes(x=feat_14, y=feat_33, color=is_class2)) +
 
 p <- evaluateFeaturePolynoms(14,33,7)
 3# 0.7758026 0.7721396
+results <- list()
+length(results) <- 12
+counter <- 1
+for (i in list(34, 38, 48, 54, 59, 60, 62, 66, 72, 77, 89, 92)) {
+  results[[counter]] <- evaluateFeaturePolynoms(14,i,7)
+  counter <- counter + 1
+}
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_34, color=is_class2)) +
   theme_classic() +
