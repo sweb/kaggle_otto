@@ -52,11 +52,6 @@ wrong_class.no <- comp %>% filter(result != is_class2) %>%
   filter(result == "No")
 
 
-showCoefficients <- function(coeff, data, rowId) {
-  res <-coeff * cbind(1, data[rowId,] %>% select(feat_1:feat_93))
-  return (res)
-}
-
 multiplyCoefficients <- function(coeff, data) {
   res <-t(t(cbind(1, data %>% select(feat_1:feat_93))) * coeff)
   return (res)
