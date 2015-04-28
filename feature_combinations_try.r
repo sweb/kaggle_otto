@@ -60,14 +60,30 @@ set.seed(42)
 
 #next try: 88
 # 32
-engineered.data <- data.frame(feat_9_combinations, feat_14_combinations, 
-                              feat_25_combinations, feat_40_combinations, 
-                              feat_15_combinations, feat_72_combinations,
-                              feat_64_combinations, feat_88_combinations)
+# engineered.data <- data.frame(feat_9_combinations, feat_14_combinations, 
+#                               feat_25_combinations, feat_40_combinations, 
+#                               feat_15_combinations, feat_72_combinations,
+#                               feat_64_combinations, feat_88_combinations)
 
-engineered.data <- normalize(addFeatureCombination(14, munged.data)) #%>% 
-   #select(feat_1:feat_93,feat_26_feat_1 , feat_26_feat_3 , feat_26_feat_34, feat_26_feat_40, feat_26_feat_48, feat_26_feat_49, feat_26_feat_51, feat_26_feat_53, feat_26_feat_56, feat_26_feat_58, feat_26_feat_60, feat_26_feat_62, feat_26_feat_63, feat_26_feat_64, feat_26_feat_66, feat_26_feat_69, feat_26_feat_71, feat_26_feat_80, feat_26_feat_93, is_class2)
+engineered.data <- addFeatureCombination(14, munged.data) %>% 
+   select(feat_1:feat_93, is_class2)
+#feat_14_feat_1 , feat_14_feat_2 , feat_14_feat_3 , feat_14_feat_8 , feat_14_feat_9 , feat_14_feat_11, feat_14_feat_13, feat_14_feat_15, feat_14_feat_16, feat_14_feat_17, feat_14_feat_23, feat_14_feat_26, feat_14_feat_29, feat_14_feat_30, feat_14_feat_32, feat_14_feat_33, feat_14_feat_34, feat_14_feat_36, feat_14_feat_37, feat_14_feat_38, feat_14_feat_39, feat_14_feat_42, feat_14_feat_43, feat_14_feat_46, feat_14_feat_48, feat_14_feat_51, feat_14_feat_54, feat_14_feat_56, feat_14_feat_59, feat_14_feat_60, feat_14_feat_62, feat_14_feat_66, feat_14_feat_68, feat_14_feat_69, feat_14_feat_72, feat_14_feat_74, feat_14_feat_76, feat_14_feat_77, feat_14_feat_78, feat_14_feat_80, feat_14_feat_82, feat_14_feat_83, feat_14_feat_84, feat_14_feat_87, feat_14_feat_89, feat_14_feat_91, feat_14_feat_92, feat_14_feat_93
+poly_14_15 <- createPolyFeatures(munged.data %>% select(feat_14, feat_15), 3) %>% 
+  select(-feat_14, -feat_15, -feat_14_feat_15)
+poly_14_72 <- createPolyFeatures(munged.data %>% select(feat_14, feat_72), 4) %>%
+  select(-feat_14, -feat_72, -feat_14_feat_72)
 
+poly_14_9 <- createPolyFeatures(munged.data %>% select(feat_14, feat_9), 3) %>%
+  select(-feat_14, -feat_9, -feat_14_feat_9, feat_14e2, feat_14e3)
+
+poly_14_16 <- createPolyFeatures(munged.data %>% select(feat_14, feat_16), 3) %>%
+  select(-feat_14, -feat_16, -feat_14_feat_16, feat_14e2, feat_14e3)
+
+poly_14_43 <- createPolyFeatures(munged.data %>% select(feat_14, feat_43), 3) %>%
+  select(-feat_14, -feat_43, -feat_14_feat_43, feat_14e2, feat_14e3)
+
+engineered.data <- data.frame(engineered.data, poly_14_72, poly_14_9, 
+                              poly_14_16, poly_14_43)
 
 #engineered.data <- normalize(munged.data)
 
@@ -99,7 +115,7 @@ logreg.tmp.pred <- predict(logreg.tmp.train, v.data)
 confusionMatrix(logreg.tmp.pred, v.data$is_class2)$overall[1]
 
 #current_results <- data.frame(train = confusionMatrix(logreg.tmp.pred_train, t.data$is_class2)$overall[1], valid = confusionMatrix(logreg.tmp.pred, v.data$is_class2)$overall[1])
-current_results <- rbind(current_results, data.frame(descr = "Additional feature 14 combinations",train = confusionMatrix(logreg.tmp.pred_train, t.data$is_class2)$overall[1], valid = confusionMatrix(logreg.tmp.pred, v.data$is_class2)$overall[1]))
+current_results <- rbind(current_results, data.frame(descr = "Removed basic combos",train = confusionMatrix(logreg.tmp.pred_train, t.data$is_class2)$overall[1], valid = confusionMatrix(logreg.tmp.pred, v.data$is_class2)$overall[1]))
 
 logreg.tmp.test <- predict(logreg.tmp.train, ts.data)
 confusionMatrix(logreg.tmp.test, ts.data$is_class2)$overall[1]

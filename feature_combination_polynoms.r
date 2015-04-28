@@ -19,7 +19,7 @@ createPolyFeatures <- function(df, degree = 2) {
   colnames(tmpDf) <- c("x1", "x2")
   for (i in 1:degree) {
     for (j in 0:i) {
-      feature_name <- paste(colnames(df)[1], "e", i-j, "_", colnames(df)[2], "e", j, sep="")
+      feature_name <- createFeatureName(df, i, j)
       new_feature <- mutate(tmpDf, x_new = x1^(i-j) * x2^j) %>% select(x_new)
       colnames(new_feature) <- c(feature_name)
       if (i == 1 & j == 0) {
@@ -35,7 +35,7 @@ createPolyFeatures <- function(df, degree = 2) {
 createFeatureName <- function(df, i, j) {
   diff <- i-j
   baseName1 <- colnames(df)[1]
-  baseName2 <- colnames(df)[1]
+  baseName2 <- colnames(df)[2]
   
   name1 <- ifelse(diff == 0, "", 
                   ifelse(diff == 1, baseName1, 
@@ -60,19 +60,20 @@ ggplot(munged.data, aes(x=feat_14, y=feat_9, color=is_class2)) +
   geom_point(alpha=0.7) +
   stat_function(fun=function(x)x+inter, geom="line")
 
-evaluateFeaturePolynoms <- function(primaryFeature, secondaryFeature, maxDegree = 8) {
+evaluateFeaturePolynoms <- function(primaryFeature, secondaryFeature, 
+                                    trainingData, validationData, maxDegree = 6) {
   rs <- data.frame()
   
   for (i in 1:maxDegree) {
     used_data <- 
-      data.frame(createPolyFeatures(train.data %>% 
+      data.frame(createPolyFeatures(trainingData %>% 
                                       select(primaryFeature,secondaryFeature), i), 
-                 is_class2 = train.data$is_class2)
+                 is_class2 = trainingData$is_class2)
     
     valid_data <- 
-      data.frame(createPolyFeatures(validation.data %>% 
+      data.frame(createPolyFeatures(validationData %>% 
                                       select(primaryFeature,secondaryFeature), i), 
-                 is_class2 = validation.data$is_class2)
+                 is_class2 = validationData$is_class2)
     
     training <- train(is_class2 ~ .,
                                    data = used_data,
@@ -139,47 +140,59 @@ for (i in list(34, 38, 48, 54, 59, 60, 62, 66, 72, 77, 89, 92)) {
 ggplot(engineered.data, aes(x=feat_14, y=feat_34, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#3 0.7754525 0.7704428
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_38, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#4 0.7820243 0.7750485
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_48, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#3 0.7800582 0.7704428
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_54, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#2 0.7760450 0.7721396
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_59, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#3 0.7771493 0.7714124
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_60, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#3 0.7807854 0.7751293
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_62, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#3 0.7763144 0.7718972
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_66, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#0.7814857 0.7760181 ggf 2
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_72, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#4 0.7916128 0.7846639
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_77, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#3 0.7755333 0.7702004
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_89, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#3 0.7782536 0.7729476
 
 ggplot(engineered.data, aes(x=feat_14, y=feat_92, color=is_class2)) +
   theme_classic() +
   geom_point(alpha=0.7)
+#3 0.7749677 0.7698772
