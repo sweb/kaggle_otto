@@ -12,13 +12,15 @@ createComparisonPlot <- function(primaryFeature, secondaryFeature, data){
     xlab(orig_colnames[1]) +
     ylab(orig_colnames[2]) 
   
-  filename <- paste("plots/", primaryFeature, "_", secondaryFeature, ".png", sep="")
+  folderName <- paste("plots/", orig_colnames[1], sep="")
+  dir.create(folderName)
+  filename <- paste(folderName, "/", primaryFeature, "_", secondaryFeature, ".png", sep="")
   
   ggsave(plot = pl, file=filename)
 }
 
 for (i in 1:93) {
-  createComparisonPlot(9, i, train.data)
+  createComparisonPlot(48, i, train.data)
 }
 
 

@@ -304,3 +304,25 @@ createAllPolyFeatures <- function(primaryFeature, secondaryFeatures, degrees) {
   }
   return (new_poly_def %>% select(-contains(".")))
 }
+
+
+createComparisonPlot <- function(primaryFeature, secondaryFeature, data){
+  if (primaryFeature == secondaryFeature) {
+    return ()
+  }
+  plot_data <- data %>% select(primaryFeature, secondaryFeature, is_class2)
+  orig_colnames <- colnames(plot_data)
+  colnames(plot_data) <- c("x1", "x2", "is_class2")
+  
+  pl <- ggplot(plot_data, aes(x=x1, y=x2, color=is_class2)) +
+    theme_classic() +
+    geom_point(alpha=0.7) +
+    xlab(orig_colnames[1]) +
+    ylab(orig_colnames[2]) 
+  
+  folderName <- paste("plots/", orig_colnames[1], sep="")
+  dir.create(folderName)
+  filename <- paste(folderName, "/", primaryFeature, "_", secondaryFeature, ".png", sep="")
+  
+  ggsave(plot = pl, file=filename)
+}
