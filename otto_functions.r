@@ -242,7 +242,7 @@ createFeatureName <- function(df, i, j) {
 evaluateFeaturePolynoms <- function(primaryFeature, secondaryFeature, 
                                     trainingData, validationData, maxDegree = 6) {
   rs <- data.frame()
-  
+  names <- colnames(trainingData %>% select(primaryFeature,secondaryFeature))
   for (i in 1:maxDegree) {
     used_data <- 
       data.frame(createPolyFeatures(trainingData %>% 
@@ -274,7 +274,8 @@ evaluateFeaturePolynoms <- function(primaryFeature, secondaryFeature,
   
   test_plot <- ggplot(rs_vis, aes(x=degree, y=value, color=type)) +
     theme_classic() +
-    geom_line()
+    geom_line() +
+    ggtitle(paste(names, collapse="_"))
   return (list(results = rs, plot = test_plot))
 }
 
