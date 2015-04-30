@@ -13,42 +13,7 @@ ggplot(engineered.data, aes(x=feat_14, y=feat_93, color=is_class2)) +
 #feat_14_feat_82, feat_14_feat_83, feat_14_feat_84, feat_14_feat_87, feat_14_feat_89, 
 #feat_14_feat_91, feat_14_feat_92, feat_14_feat_93
 
-createPolyFeatures <- function(df, degree = 2) {
-  resultDf <- data.frame()
-  tmpDf <- df
-  colnames(tmpDf) <- c("x1", "x2")
-  for (i in 1:degree) {
-    for (j in 0:i) {
-      feature_name <- createFeatureName(df, i, j)
-      new_feature <- mutate(tmpDf, x_new = x1^(i-j) * x2^j) %>% select(x_new)
-      colnames(new_feature) <- c(feature_name)
-      if (i == 1 & j == 0) {
-        resultDf <- new_feature
-      } else {
-        resultDf <- bind_cols(resultDf, new_feature)
-      }
-    }
-  }
-  return (resultDf)
-}
 
-createFeatureName <- function(df, i, j) {
-  diff <- i-j
-  baseName1 <- colnames(df)[1]
-  baseName2 <- colnames(df)[2]
-  
-  name1 <- ifelse(diff == 0, "", 
-                  ifelse(diff == 1, baseName1, 
-                         paste(baseName1, "e", diff, sep="")))
-  
-  name2 <- ifelse(j == 0, "", 
-                  ifelse(j == 1, baseName2, 
-                         paste(baseName2, "e", j, sep="")))
-  
-  finalName <- ifelse(diff == 0, name2, 
-                      ifelse(j == 0, name1, paste(name1,name2, sep="_")))
-  return(finalName)
-}
 
 logreg.tmp.train$finalModel$coefficients[c(0,14,9)+1]
 
@@ -60,44 +25,6 @@ ggplot(munged.data, aes(x=feat_14, y=feat_9, color=is_class2)) +
   geom_point(alpha=0.7) +
   stat_function(fun=function(x)x+inter, geom="line")
 
-evaluateFeaturePolynoms <- function(primaryFeature, secondaryFeature, 
-                                    trainingData, validationData, maxDegree = 6) {
-  rs <- data.frame()
-  
-  for (i in 1:maxDegree) {
-    used_data <- 
-      data.frame(createPolyFeatures(trainingData %>% 
-                                      select(primaryFeature,secondaryFeature), i), 
-                 is_class2 = trainingData$is_class2)
-    
-    valid_data <- 
-      data.frame(createPolyFeatures(validationData %>% 
-                                      select(primaryFeature,secondaryFeature), i), 
-                 is_class2 = validationData$is_class2)
-    
-    training <- train(is_class2 ~ .,
-                                   data = used_data,
-                                   method = "glm",
-                                   metric = "ROC",
-                                   trControl = control.config)
-    
-    logreg.tmp.pred_train <- predict(training, used_data)
-    a <- confusionMatrix(logreg.tmp.pred_train, used_data$is_class2)$overall[1]
-    
-    logreg.tmp.pred <- predict(training, valid_data)
-    b <- confusionMatrix(logreg.tmp.pred, valid_data$is_class2)$overall[1]
-    
-    c <- data.frame(degree = i, train_acc = a, valid_acc = b)
-    rs <- rbind(rs, c)
-  }
-  
-  rs_vis <- rs %>% gather("type", "value", 2:3)
-  
-  test_plot <- ggplot(rs_vis, aes(x=degree, y=value, color=type)) +
-    theme_classic() +
-    geom_line()
-  return (list(results = rs, plot = test_plot))
-}
 
 p <- evaluateFeaturePolynoms(14,9,5)
 #14,9 => 3 => 0.7742135 0.7719780
@@ -129,6 +56,9 @@ ggplot(train.data, aes(x=feat_14, y=feat_33, color=is_class2)) +
 
 p <- evaluateFeaturePolynoms(14,33,7)
 3# 0.7758026 0.7721396
+
+
+
 results <- list()
 length(results) <- 12
 counter <- 1

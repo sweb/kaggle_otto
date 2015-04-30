@@ -1,6 +1,7 @@
 require(dplyr)
 require(ggplot2)
 require(caret)
+require(tidyr)
 
 setwd("C:/dev/repositories/R/kaggle_otto")
 

@@ -165,3 +165,142 @@ engineerDataClass2 <- function(data) {
                                 feat_64_combinations, feat_88_combinations)
   return(engineered.data)
 }
+
+runAndValidateTraining <- function(data, description) {
+  set.seed(42)
+  split.data <- createDataPartition(data$is_class2, p = 0.6, list = FALSE)
+  t.data <- data[split.data, ]
+  tmp.test.data <- data[-split.data, ]
+  set.seed(42)
+  split.test <- createDataPartition(tmp.test.data$is_class2, p = 0.5, list = FALSE)
+  
+  v.data <- tmp.test.data[split.test,]
+  ts.data <- tmp.test.data[-split.test,]
+  
+  control.config <- trainControl(method = "repeatedcv", repeats = 1,
+                                 summaryFunction = twoClassSummary,
+                                 classProbs = TRUE)
+  
+  
+  logreg.tmp.train <- train(is_class2 ~ .,
+                            data = t.data,
+                            method = "glm",
+                            metric = "ROC",
+                            trControl = control.config)
+  
+  logreg.tmp.pred_train <- predict(logreg.tmp.train, t.data)
+  confusionMatrix(logreg.tmp.pred_train, t.data$is_class2)$overall[1]
+  
+  logreg.tmp.pred <- predict(logreg.tmp.train, v.data)
+  confusionMatrix(logreg.tmp.pred, v.data$is_class2)$overall[1]
+  
+  print(summary(logreg.tmp.train))
+  
+  result <- data.frame(descr = description,train = confusionMatrix(logreg.tmp.pred_train, t.data$is_class2)$overall[1], valid = confusionMatrix(logreg.tmp.pred, v.data$is_class2)$overall[1])
+  return (result)
+}
+
+
+createPolyFeatures <- function(df, degree = 2) {
+  resultDf <- data.frame()
+  tmpDf <- df
+  colnames(tmpDf) <- c("x1", "x2")
+  for (i in 1:degree) {
+    for (j in 0:i) {
+      feature_name <- createFeatureName(df, i, j)
+      new_feature <- mutate(tmpDf, x_new = x1^(i-j) * x2^j) %>% select(x_new)
+      colnames(new_feature) <- c(feature_name)
+      if (i == 1 & j == 0) {
+        resultDf <- new_feature
+      } else {
+        resultDf <- bind_cols(resultDf, new_feature)
+      }
+    }
+  }
+  return (resultDf)
+}
+
+createFeatureName <- function(df, i, j) {
+  diff <- i-j
+  baseName1 <- colnames(df)[1]
+  baseName2 <- colnames(df)[2]
+  
+  name1 <- ifelse(diff == 0, "", 
+                  ifelse(diff == 1, baseName1, 
+                         paste(baseName1, "e", diff, sep="")))
+  
+  name2 <- ifelse(j == 0, "", 
+                  ifelse(j == 1, baseName2, 
+                         paste(baseName2, "e", j, sep="")))
+  
+  finalName <- ifelse(diff == 0, name2, 
+                      ifelse(j == 0, name1, paste(name1,name2, sep="_")))
+  return(finalName)
+}
+
+
+evaluateFeaturePolynoms <- function(primaryFeature, secondaryFeature, 
+                                    trainingData, validationData, maxDegree = 6) {
+  rs <- data.frame()
+  
+  for (i in 1:maxDegree) {
+    used_data <- 
+      data.frame(createPolyFeatures(trainingData %>% 
+                                      select(primaryFeature,secondaryFeature), i), 
+                 is_class2 = trainingData$is_class2)
+    
+    valid_data <- 
+      data.frame(createPolyFeatures(validationData %>% 
+                                      select(primaryFeature,secondaryFeature), i), 
+                 is_class2 = validationData$is_class2)
+    
+    training <- train(is_class2 ~ .,
+                      data = used_data,
+                      method = "glm",
+                      metric = "ROC",
+                      trControl = control.config)
+    
+    logreg.tmp.pred_train <- predict(training, used_data)
+    a <- confusionMatrix(logreg.tmp.pred_train, used_data$is_class2)$overall[1]
+    
+    logreg.tmp.pred <- predict(training, valid_data)
+    b <- confusionMatrix(logreg.tmp.pred, valid_data$is_class2)$overall[1]
+    
+    c <- data.frame(degree = i, train_acc = a, valid_acc = b)
+    rs <- rbind(rs, c)
+  }
+  
+  rs_vis <- rs %>% gather("type", "value", 2:3)
+  
+  test_plot <- ggplot(rs_vis, aes(x=degree, y=value, color=type)) +
+    theme_classic() +
+    geom_line()
+  return (list(results = rs, plot = test_plot))
+}
+
+enableParallel <- function() {
+  require(doParallel)
+  
+  c1 <- makeCluster(2)
+  registerDoParallel(c1)
+}
+
+
+createAllPolyFeatures <- function(primaryFeature, secondaryFeatures, degrees) {
+  numberOfFeatures <- length(secondaryFeatures)
+  if (numberOfFeatures != length(degrees)) {
+    print("feature list does not fit to degree list")
+    return (data.frame())
+  }
+  new_poly_df <- data.frame()
+  for (i in 1:numberOfFeatures) {
+    new_poly <- createPolyFeatures(munged.data %>% 
+                                     select(primaryFeature, secondaryFeatures[[i]]), degrees[[i]])
+    if (i == 1) {
+      new_poly_def <- data.frame(new_poly)
+    } else {
+      new_poly_def <- data.frame(new_poly_def, new_poly)
+    }
+  }
+  return (new_poly_def %>% select(-contains(".")))
+}
