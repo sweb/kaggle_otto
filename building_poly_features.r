@@ -2,6 +2,14 @@ for (i in 1:93) {
   createComparisonPlot(2, i, train.data)
 }
 
+used_data <- train.data %>% mutate(feat_14_feat_48 = feat_14 * feat_48)
+
+colnames(used_data %>%select(103))
+
+for (i in 1:93) {
+  createComparisonPlot(103, i, used_data)
+}
+
 
 results <- list()
 relevant_features <- list(14, 15, 16, 40, 42, 44, 48, 54, 66, 67, 72, 88)

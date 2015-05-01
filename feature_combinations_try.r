@@ -135,7 +135,7 @@ new_result <- runAndValidateTraining(feat_9_14_25_combo,
                                      "9_14_25 non sig removed")
 
 current_results <- rbind(current_results, new_result)
-
+#Accuracy10 9_14_25 non sig removed 0.8666774 0.8598788
 
 
 
