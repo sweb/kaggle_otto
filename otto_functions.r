@@ -79,7 +79,7 @@ create_submission <- function(train.class1, train.class2, train.class3,
                               train.class7, train.class8, train.class9) {
   data <- read.csv("data/test.csv", header = TRUE, sep = ",", na.strings = "")
   
-  data2 <- engineerDataClass2(data %>% select(-id))
+  data2 <- data #engineerDataClass2(data %>% select(-id))
   
   predictions <- predict_data(data, data2, train.class1, train.class2, train.class3, 
                               train.class4, train.class5, train.class6, 
@@ -174,7 +174,8 @@ engineerDataClass2 <- function(data) {
   return (feat_9_14_25_combo)
 }
 
-runAndValidateTraining <- function(data, current_class, datSetReduction = 1.0, description) {
+runAndValidateTraining <- function(data, current_class, datSetReduction = 1.0, 
+                                   numberOfFeatures, description) {
   tmp_data <- data.frame(data, is_class = current_class) 
   set.seed(42)
   split.data <- createDataPartition(tmp_data$is_class, p = 0.6, list = FALSE)
@@ -191,7 +192,7 @@ runAndValidateTraining <- function(data, current_class, datSetReduction = 1.0, d
     t.data <- t.data %>% sample_frac(datSetReduction, replace=FALSE)
   }
   
-  control.config <- trainControl(method = "repeatedcv", repeats = 1,
+  control.config <- trainControl(method = "none", repeats = 1,
                                  summaryFunction = twoClassSummary,
                                  classProbs = TRUE)
   
@@ -201,7 +202,7 @@ runAndValidateTraining <- function(data, current_class, datSetReduction = 1.0, d
                           .maxdepth = c(4, 8),
                           .nu = c(0.1, 1))
   
-  rf.grid <- data.frame(.mtry = c(7,6,9))
+  rf.grid <- data.frame(.mtry = c(numberOfFeatures))
   set.seed(42)
   logreg.tmp.train <- train(is_class ~ .,
                             data = t.data,
@@ -354,4 +355,101 @@ createComparisonPlot <- function(primaryFeature, secondaryFeature, data, current
   filename <- paste(folderName, "/", primaryFeature, "_", secondaryFeature, ".png", sep="")
   
   ggsave(plot = pl, file=filename)
+}
+
+createResultComparisonPlot <- function(primaryFeature, secondaryFeature, data, 
+                                       current_class, resultType = "GenericMethod"){
+  if (primaryFeature == secondaryFeature) {
+    return ()
+  }
+  plot_data <- data.frame(data %>% select(primaryFeature, secondaryFeature, result), is_class = current_class)
+  orig_colnames <- colnames(plot_data)
+  colnames(plot_data) <- c("x1", "x2", "Predicted", "Actual")
+  
+  pl <- ggplot(plot_data, aes(x=x1, y=x2)) +
+    theme_classic() +
+    facet_grid(Actual ~ Predicted, labeller = label_both) +
+    geom_point(alpha=0.7) +
+    xlab(orig_colnames[1]) +
+    ylab(orig_colnames[2]) 
+  
+  folderName <- paste("plots/", resultType, "/", orig_colnames[1], sep="")
+  dir.create(folderName)
+  filename <- paste(folderName, "/", primaryFeature, "_", secondaryFeature, ".png", sep="")
+  
+  ggsave(plot = pl, file=filename)
+}
+
+createResultSmoothPlot <- function(primaryFeature, data, 
+                                       current_class, result, resultType = "GenericMethod"){
+  
+  plot_data <- data.frame(data %>% select(primaryFeature), 
+                          is_class = current_class, result) %>%
+    mutate(Actual = ifelse(is_class == "Yes", 1, 0),
+           Predicted = ifelse(result == "Yes", 1, 0)) %>%
+    gather("Type", "Value", Actual, Predicted) %>%
+    select(1, Type, Value)
+  
+  orig_colnames <- colnames(plot_data)
+  colnames(plot_data) <- c("x1", "Type", "Value")
+  
+  pl <- ggplot(plot_data, aes(x = x1, y = Value, color = Type)) +
+    theme_classic() +
+    geom_smooth(span = 0.5) +
+    geom_point(alpha = 0.4) +
+    xlab(orig_colnames[1])
+  
+  folderName <- paste("plots/", resultType, "/smooth",sep="")
+  dir.create(folderName)
+  filename <- paste(folderName, "/", primaryFeature, ".png", sep="")
+  
+  ggsave(plot = pl, file=filename)
+}
+
+
+# Source: http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
 }
