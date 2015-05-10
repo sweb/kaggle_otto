@@ -8,12 +8,12 @@ require(randomForest)
 data <- munged.data %>% select(1:93)
 
 
-yes_class_data <- munged.data %>% filter(is_class2 == "Yes")
+yes_class_data <- train.data %>% filter(is_class2 == "Yes")
 set.seed(42)
-no_class_data <- munged.data %>% filter(is_class2 == "No") %>% sample_n(16122)
+no_class_data <- train.data %>% filter(is_class2 == "No") %>% sample_n(16122)
 
 data_comp <- rbind(yes_class_data, no_class_data)
-data <- data_comp %>% select(1:93)
+data <- data_comp %>% select(1:93, is_class2)
 
 data <- addFeatureCombination(9, munged.data %>% select(1:93)) %>%
   select(-feat_9_feat_84,-feat_9_feat_51,-feat_9_feat_61,-feat_9_feat_6,-feat_9_feat_5,-feat_9_feat_82,-feat_9_feat_81,-feat_9_feat_91,-feat_9_feat_28,-feat_9_feat_45,-feat_84,-feat_9_feat_7,-feat_9_feat_31,-feat_9_feat_2,-feat_9_feat_57,-feat_51,-feat_9_feat_29,-feat_9_feat_30,-feat_9_feat_77,-feat_9_feat_47,-feat_9_feat_49,-feat_9_feat_93,-feat_9_feat_3,-feat_9_feat_79,-feat_9_feat_83,-feat_9_feat_26,-feat_9_feat_46,-feat_9_feat_19,-feat_9_feat_58,-feat_9_feat_23)
@@ -21,7 +21,7 @@ data <- addFeatureCombination(9, munged.data %>% select(1:93)) %>%
 data <- addFeatureCombination(25, munged.data %>% select(1:93)) %>%
   select(-feat_25_feat_51,-feat_25_feat_84,-feat_84,-feat_51,-feat_25_feat_61,-feat_25_feat_82,-feat_25_feat_6,-feat_25_feat_81,-feat_25_feat_2,-feat_82,-feat_25_feat_93,-feat_81,-feat_25_feat_91,-feat_25_feat_28,-feat_25_feat_31,-feat_6,-feat_25_feat_7,-feat_25_feat_5,-feat_25_feat_47,-feat_25_feat_78,-feat_25_feat_45,-feat_93,-feat_25_feat_58,-feat_31,-feat_25_feat_49,-feat_25_feat_57,-feat_61,-feat_28,-feat_25_feat_19,-feat_45,-feat_25_feat_23,-feat_25_feat_69,-feat_7)
 
-new_result <- runAndValidateTraining(data, munged.data$is_class2, 1.0, 25,
+new_result <- runAndValidateTraining(data, munged.data$is_class2, 1.0, 9,
                                      "class 2 rf")
 
 current_results <- rbind(current_results, munged.data$result)
@@ -47,16 +47,21 @@ control.config <- trainControl(method = "repeatedcv", repeats = 1,
                                summaryFunction = twoClassSummary,
                                classProbs = TRUE)
 
-rf.grid <- data.frame(.mtry = c(7,6))
+rf.grid <- data.frame(.mtry = c(8,9))
 
-logreg.tmp.train <- train(is_class ~ .,
-                          data = t.data,
+logreg.tmp.train <- train(is_class2 ~ .,
+                          data = data,
                           method = "rf",
                           metric = "ROC",
                           tuneGrid = rf.grid,
                           trControl = control.config)
 
 
+
+class2_valid_pred <- predict(logreg.tmp.train, validation.data) 
+confusionMatrix(class2_valid_pred, validation.data$is_class2)
+
+data.frame(feature = rownames(logreg.tmp.train$finalModel$importance), importance = logreg.tmp.train$finalModel$importance) %>% arrange(MeanDecreaseGini)
 
 class2_valid_pred <- predict(new_result$model, validation.data) 
 
